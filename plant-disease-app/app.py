@@ -23,6 +23,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ======================
 # Model Configuration
 # ======================
+import tensorflow as tf
+import os
+
+# Reduce TensorFlow memory usage
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
+
 MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
 
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
