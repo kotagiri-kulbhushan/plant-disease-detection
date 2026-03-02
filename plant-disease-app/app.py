@@ -34,7 +34,7 @@ if not os.path.exists(MODEL_PATH):
     gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
 
 print("Loading model...")
-model = load_model(MODEL_PATH, compile=False)
+model = load_model(MODEL_PATH)
 print("Model Loaded Successfully")
 
 # ======================
