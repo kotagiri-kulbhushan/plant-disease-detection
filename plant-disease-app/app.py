@@ -13,7 +13,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-MODEL_PATH = r"D:\plant disease detection\trained_model.keras"
+MODEL_PATH = "trained_model.keras"
 
 # Load model
 model = load_model(MODEL_PATH)
