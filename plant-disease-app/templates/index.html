@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌿 Plant Disease Detection System</h1>
+            <p class="subtitle">Upload an image of a plant leaf to detect diseases using AI</p>
+        </div>
+
+        <div class="upload-box">
+            <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="file-upload-area" id="uploadArea">
+                    <input type="file" name="file" id="fileInput" accept="image/*" required hidden>
+                    
+                    <div class="upload-prompt" id="uploadPrompt">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Click to select image or drag and drop</p>
+                        <p class="file-types">Supported: JPG, PNG, JPEG</p>
+                    </div>
+
+                    <div class="preview-section" id="previewSection" style="display: none;">
+                        <img id="imagePreview" src="" alt="Preview">
+                        <button type="button" class="clear-btn" id="clearBtn">✕ Remove</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    <span id="btnText">Detect Disease</span>
+                </button>
+            </form>
+
+            <div class="info-box">
+                <p class="info-title">Tips for better results:</p>
+                <ul>
+                    <li>Take photo in good natural daylight</li>
+                    <li>Make sure the diseased part is clearly visible</li>
+                    <li>Hold camera steady to avoid blur</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const previewSection = document.getElementById('previewSection');
+        const imagePreview = document.getElementById('imagePreview');
+        const clearBtn = document.getElementById('clearBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+
+        uploadArea.addEventListener('click', function(e) {
+            if (e.target !== clearBtn && !clearBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                showPreview(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showPreview(file);
+            }
+        });
+
+        clearBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            uploadPrompt.style.display = 'block';
+            previewSection.style.display = 'none';
+            submitBtn.disabled = true;
+        });
+
+        function showPreview(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    uploadPrompt.style.display = 'none';
+                    previewSection.style.display = 'block';
+                    submitBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        uploadForm.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            document.getElementById('btnText').textContent = 'Processing...';
+        });
+    </script>
+</body>
+</html>
