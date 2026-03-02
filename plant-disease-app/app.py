@@ -13,11 +13,25 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+import os
+import gdown
+from tensorflow.keras.models import load_model
+
 MODEL_PATH = "trained_model.keras"
 
+# Google Drive file ID
+FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
+DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
+
+# Download model if it doesn't exist
+if not os.path.exists(MODEL_PATH):
+    print("Downloading model from Google Drive...")
+    gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
+
 # Load model
+print("Loading model...")
 model = load_model(MODEL_PATH)
-print("Model Loaded")
+print("Model Loaded Successfully")
 
 # ======================
 # Load class names (exact order from Colab)
