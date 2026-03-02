@@ -3,18 +3,33 @@ import os
 import numpy as np
 import json
 import gdown
+import gc
+
+# ======================
+# TensorFlow Optimization (IMPORTANT – must be before TF import)
+# ======================
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
+
+# Limit TF threads
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
 
 app = Flask(__name__)
 
 # ======================
-# Base Directory (Important for Render)
+# Base Directory
 # ======================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ======================
-# Configuration
+# Upload Configuration
 # ======================
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -23,14 +38,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ======================
 # Model Configuration
 # ======================
-import tensorflow as tf
-import os
-
-# Reduce TensorFlow memory usage
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
-
 MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
 
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
@@ -66,6 +73,11 @@ def predict_disease(img_path):
     img_array = np.expand_dims(img_array, axis=0)
 
     prediction = model.predict(img_array, verbose=0)[0]
+
+    # Free memory immediately
+    del img_array
+    gc.collect()
+
     top5_idx = prediction.argsort()[-5:][::-1]
 
     top5_results = []
@@ -119,3 +131,4 @@ def uploaded_file(filename):
 # ======================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
