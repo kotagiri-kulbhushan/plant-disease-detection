@@ -127,22 +127,42 @@ def generate_pdf(image, disease, confidence, top5):
     )
     elements.append(Spacer(1, 18))
 
-# Title (NO EXTRA SPACE)
-elements.append(Paragraph("Plant Disease Detection Report", title_style))
+# -------- Date --------
+elements.append(
+    Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style)
+)
+elements.append(Spacer(1, 18))
 
-# Remove default paragraph spacing
-title_style.spaceAfter = 0
-title_style.spaceBefore = 0
 
-# Underline immediately
+# -------- Title Style (NO DEFAULT SPACING) --------
+title_style = ParagraphStyle(
+    name="TitleStyle",
+    parent=styles["Title"],
+    alignment=1,
+    fontSize=22,
+    textColor=colors.black,
+    spaceBefore=0,
+    spaceAfter=0
+)
+
+# -------- Title --------
+elements.append(
+    Paragraph("Plant Disease Detection Report", title_style)
+)
+
+# -------- Underline (Immediately Below Title) --------
 line = Table([[""]], colWidths=[6*inch])
 line.setStyle(TableStyle([
-    ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
+    ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#A5D6A7")),
+    ("LEFTPADDING", (0,0), (-1,-1), 0),
+    ("RIGHTPADDING", (0,0), (-1,-1), 0),
+    ("TOPPADDING", (0,0), (-1,-1), 0),
+    ("BOTTOMPADDING", (0,0), (-1,-1), 0),
 ]))
 
 elements.append(line)
 
-# Small controlled spacing after line
+# Controlled spacing AFTER line
 elements.append(Spacer(1, 12))
 
     # Image
