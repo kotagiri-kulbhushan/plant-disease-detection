@@ -1,135 +1,57 @@
-from flask import Flask, render_template, request, send_from_directory
-import os
+import streamlit as st
+import tensorflow as tf
 import numpy as np
 import json
+import os
 import gdown
-import gc
+from PIL import Image
+
+st.set_page_config(page_title="Plant Disease Detection", layout="centered")
 
 # ======================
-# TensorFlow Optimization (IMPORTANT – must be before TF import)
+# Download Model
 # ======================
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
-os.environ["TF_NUM_INTEROP_THREADS"] = "1"
-
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
-
-# Limit TF threads
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
-
-app = Flask(__name__)
-
-# ======================
-# Base Directory
-# ======================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# ======================
-# Upload Configuration
-# ======================
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# ======================
-# Model Configuration
-# ======================
-MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
-
+MODEL_PATH = "trained_model.keras"
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
 DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
-# Download model if not present
-if not os.path.exists(MODEL_PATH):
-    print("Downloading model from Google Drive...")
-    gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
+@st.cache_resource
+def load_model_from_drive():
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("Downloading model..."):
+            gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
 
-print("Loading model...")
-model = load_model(MODEL_PATH)
-print("Model Loaded Successfully")
+    model = tf.keras.models.load_model(MODEL_PATH)
+    return model
+
+model = load_model_from_drive()
 
 # ======================
 # Load class names
 # ======================
-CLASS_PATH = os.path.join(BASE_DIR, "class_names.json")
-
-with open(CLASS_PATH, "r") as f:
+with open("class_names.json", "r") as f:
     class_names = json.load(f)
 
-print("Total Classes:", len(class_names))
-
-
 # ======================
-# Prediction Function
+# UI
 # ======================
-def predict_disease(img_path):
-    img = image.load_img(img_path, target_size=(128, 128), color_mode='rgb')
-    img_array = image.img_to_array(img)
-    img_array = np.array(img_array, dtype=np.float32)
+st.title("🌿 AI Plant Disease Detection")
+st.write("Upload a plant leaf image to detect disease.")
+
+uploaded_file = st.file_uploader("Choose a leaf image", type=["jpg", "png", "jpeg"])
+
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
+
+    img = image.resize((128, 128))
+    img_array = np.array(img)
     img_array = np.expand_dims(img_array, axis=0)
 
-    prediction = model.predict(img_array, verbose=0)[0]
-
-    # Free memory immediately
-    del img_array
-    gc.collect()
-
+    prediction = model.predict(img_array)[0]
     top5_idx = prediction.argsort()[-5:][::-1]
 
-    top5_results = []
+    st.subheader("Top 5 Predictions")
+
     for i in top5_idx:
-        label = class_names[i]
-        confidence = round(prediction[i] * 100, 2)
-        top5_results.append((label, confidence))
-
-    final_label, final_confidence = top5_results[0]
-    return final_label, final_confidence, top5_results
-
-
-# ======================
-# Routes
-# ======================
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'file' not in request.files:
-        return "No file uploaded"
-
-    file = request.files['file']
-    if file.filename == '':
-        return "No selected file"
-
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(filepath)
-
-    disease, confidence, top5_results = predict_disease(filepath)
-
-    return render_template(
-        'result.html',
-        disease=disease,
-        confidence=confidence,
-        image_name=file.filename,
-        top5_results=top5_results
-    )
-
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-
-# ======================
-# Run App
-# ======================
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
-
+        st.write(f"{class_names[i]} — {round(prediction[i]*100,2)}%")
