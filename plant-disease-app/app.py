@@ -8,26 +8,24 @@ from PIL import Image
 from datetime import datetime
 import tempfile
 
-# PDF imports
+# PDF
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Image as RLImage,
-    Table,
-    TableStyle
+    SimpleDocTemplate, Paragraph, Spacer,
+    Image as RLImage, Table, TableStyle
 )
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 
 
 # =====================================================
-# PAGE CONFIGURATION
+# CONFIG
 # =====================================================
 st.set_page_config(
-    page_title="Plant Health Diagnostic System",
+    page_title="Plant Disease Detection System",
     page_icon="🌿",
     layout="centered"
 )
@@ -35,20 +33,50 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =====================================================
-# HEADER
+# CUSTOM CSS (UI POLISH)
 # =====================================================
 st.markdown("""
-<h1 style='text-align:center; color:#2E7D32;'>
-Plant Health Diagnostic System
-</h1>
-<p style='text-align:center; text-align:center; color:gray;'>
-AI-powered Leaf Disease Detection for Farmers & Researchers
-</p>
-<hr>
+<style>
+.uploaded-img {
+    border-radius: 20px;
+    width: 300px;
+    margin: auto;
+    display: block;
+}
+.center-btn {
+    display: flex;
+    justify-content: center;
+}
+.summary-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 30px;
+}
+.result-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 25px;
+    border-radius: 15px;
+    color: white;
+    margin-top: 20px;
+}
+.table-container {
+    background: #f5f7fa;
+    padding: 20px;
+    border-radius: 15px;
+}
+</style>
 """, unsafe_allow_html=True)
 
 # =====================================================
-# MODEL CONFIG
+# HEADER
+# =====================================================
+st.markdown("<h1 style='text-align:center;'>🌿 Plant Disease Detection System</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:gray;'>AI-powered Leaf Diagnosis for Agriculture</p>", unsafe_allow_html=True)
+st.markdown("---")
+
+# =====================================================
+# MODEL
 # =====================================================
 MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
@@ -57,22 +85,16 @@ DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Preparing AI model..."):
-            gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
+        gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
     return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model()
 
-# =====================================================
-# LOAD CLASS NAMES
-# =====================================================
-CLASS_PATH = os.path.join(BASE_DIR, "class_names.json")
-
-with open(CLASS_PATH, "r") as f:
+with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
     class_names = json.load(f)
 
 # =====================================================
-# PDF GENERATOR
+# PDF FUNCTION (PROFESSIONAL)
 # =====================================================
 def generate_pdf(image, disease, confidence, top5_results):
 
@@ -81,166 +103,122 @@ def generate_pdf(image, disease, confidence, top5_results):
     elements = []
     styles = getSampleStyleSheet()
 
-    clean_disease = disease.replace("___", " - ")
+    center_style = ParagraphStyle(
+        name="Center",
+        parent=styles["Title"],
+        alignment=1
+    )
 
-    # Header
-    elements.append(Paragraph("<b>Plant Health Diagnostic Report</b>", styles["Title"]))
+    elements.append(Paragraph("🌿 Plant Disease Detection System", center_style))
     elements.append(Spacer(1, 10))
-
-    elements.append(Paragraph(
-        f"Generated on: {datetime.now().strftime('%d %B %Y, %H:%M')}",
-        styles["Normal"]
-    ))
+    elements.append(Paragraph("Detection Report", center_style))
     elements.append(Spacer(1, 20))
 
-    # Leaf Image
+    # Save image
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     image.save(img_path)
-    elements.append(RLImage(img_path, width=3.5*inch, height=3.5*inch))
+    elements.append(RLImage(img_path, width=3*inch, height=3*inch))
     elements.append(Spacer(1, 20))
 
-    # Diagnosis Section
-    elements.append(Paragraph("<b>Primary Diagnosis</b>", styles["Heading2"]))
-    elements.append(Spacer(1, 8))
-    elements.append(Paragraph(clean_disease, styles["Heading3"]))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(f"Model Confidence: {confidence}%", styles["Normal"]))
-    elements.append(Spacer(1, 20))
+    clean = disease.replace("___", " - ")
 
-    # Interpretation
-    if confidence >= 90:
-        interpretation = "High confidence prediction."
-    elif confidence >= 70:
-        interpretation = "Moderate confidence prediction."
-    else:
-        interpretation = "Low confidence prediction. Further verification recommended."
+    elements.append(Paragraph("<b>Detected Disease</b>", styles["Heading2"]))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph(clean, styles["Heading3"]))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph(f"<b>Model Confidence:</b> {confidence}%", styles["Normal"]))
+    elements.append(Spacer(1, 25))
 
-    elements.append(Paragraph("<b>Interpretation</b>", styles["Heading3"]))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(interpretation, styles["Normal"]))
-    elements.append(Spacer(1, 20))
-
-    # Top Predictions Table
-    data = [["Rank", "Condition", "Confidence (%)"]]
-    for idx, (label, conf) in enumerate(top5_results, start=1):
-        label_clean = label.replace("___", " - ")
-        data.append([idx, label_clean, conf])
+    # Table
+    data = [["Rank", "Disease", "Confidence"]]
+    for i, (label, conf) in enumerate(top5_results, 1):
+        data.append([i, label.replace("___", " - "), f"{conf}%"])
 
     table = Table(data, colWidths=[1*inch, 3*inch, 1.5*inch])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8F5E9")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#667eea")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("FONTSIZE", (0,0), (-1,-1), 10),
     ]))
 
-    elements.append(Paragraph("<b>Top 5 Model Predictions</b>", styles["Heading3"]))
+    elements.append(Paragraph("<b>Top 5 Predictions</b>", styles["Heading2"]))
     elements.append(Spacer(1, 10))
     elements.append(table)
-    elements.append(Spacer(1, 30))
 
+    elements.append(Spacer(1, 30))
     elements.append(Paragraph(
-        "Disclaimer: This report is AI-generated and should be validated by an agricultural expert.",
+        f"Generated on {datetime.now().strftime('%d/%m/%Y %H:%M')}",
         styles["Normal"]
     ))
 
     doc.build(elements)
     return pdf_file.name
 
-
 # =====================================================
-# IMAGE UPLOAD
+# UPLOAD
 # =====================================================
-st.subheader("Leaf Image Upload")
+st.subheader("Upload Leaf Image")
 
-uploaded_file = st.file_uploader(
-    "Upload a clear image of the affected leaf",
-    type=["jpg", "jpeg", "png"]
-)
+uploaded = st.file_uploader("Choose image", type=["jpg","jpeg","png"])
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Leaf Image", use_container_width=True)
+if uploaded:
+    image = Image.open(uploaded)
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    st.image(image, width=300)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("Run AI Diagnosis"):
+    st.markdown("<div class='center-btn'>", unsafe_allow_html=True)
+    run = st.button("🔍 Run AI Diagnosis")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        with st.spinner("Analyzing plant health condition..."):
+    if run:
 
-            img = image.resize((128, 128))
-            img_array = np.array(img)
-            img_array = np.expand_dims(img_array, axis=0)
+        img = image.resize((128,128))
+        arr = np.expand_dims(np.array(img), axis=0)
+        pred = model.predict(arr)[0]
+        idx = pred.argsort()[-5:][::-1]
 
-            prediction = model.predict(img_array)[0]
-            top5_idx = prediction.argsort()[-5:][::-1]
+        main = class_names[idx[0]]
+        main_conf = round(float(pred[idx[0]])*100,2)
 
-            main_disease = class_names[top5_idx[0]]
-            main_confidence = round(float(prediction[top5_idx[0]]) * 100, 2)
+        top5 = [(class_names[i], round(float(pred[i])*100,2)) for i in idx]
 
-            top5_results = [
-                (class_names[i], round(float(prediction[i]) * 100, 2))
-                for i in top5_idx
-            ]
+        st.markdown("<div class='summary-title'>Diagnostic Summary</div>", unsafe_allow_html=True)
 
-        # =====================================================
-        # DISPLAY RESULTS
-        # =====================================================
-        st.markdown("---")
-        st.subheader("Diagnostic Summary")
+        clean_main = main.replace("___"," - ")
 
-        clean_disease = main_disease.replace("___", " - ")
+        st.markdown(f"""
+        <div class='result-card'>
+            <h3>Detected Disease</h3>
+            <h2>{clean_main}</h2>
+            <p>Confidence: <b>{main_conf}%</b></p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Confidence Interpretation
-        if main_confidence >= 90:
-            confidence_level = "High Confidence"
-            confidence_color = "green"
-        elif main_confidence >= 70:
-            confidence_level = "Moderate Confidence"
-            confidence_color = "orange"
-        else:
-            confidence_level = "Low Confidence"
-            confidence_color = "red"
+        st.markdown("### Top 5 Predictions")
 
-        col1, col2 = st.columns(2)
+        st.markdown("<div class='table-container'>", unsafe_allow_html=True)
 
-        with col1:
-            st.markdown("### Identified Condition")
-            st.markdown(f"<h4 style='color:#2E7D32'>{clean_disease}</h4>", unsafe_allow_html=True)
+        st.markdown("""
+        | Rank | Disease | Confidence |
+        |------|---------|------------|
+        """)
 
-        with col2:
-            st.markdown("### Confidence Level")
-            st.markdown(
-                f"<h4 style='color:{confidence_color}'>{main_confidence}%</h4>",
-                unsafe_allow_html=True
-            )
-            st.caption(confidence_level)
+        for i,(label,conf) in enumerate(top5,1):
+            st.markdown(f"| {i} | {label.replace('___',' - ')} | **{conf}%** |")
 
-        if "healthy" in main_disease.lower():
-            st.success("Leaf Status: Healthy")
-        else:
-            st.error("Leaf Status: Disease Detected")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("### Model Confidence Breakdown")
+        pdf_path = generate_pdf(image, main, main_conf, top5)
 
-        for label, conf in top5_results:
-            label_clean = label.replace("___", " - ")
-            progress_value = int(round(conf))
-            st.progress(progress_value)
-            st.write(f"{label_clean} — {progress_value}%")
-
-        st.markdown("---")
-
-        # PDF DOWNLOAD
-        pdf_path = generate_pdf(
-            image,
-            main_disease,
-            main_confidence,
-            top5_results
-        )
-
-        with open(pdf_path, "rb") as f:
+        with open(pdf_path,"rb") as f:
             st.download_button(
-                label="Download Diagnostic Report (PDF)",
-                data=f,
-                file_name="Plant_Health_Report.pdf",
+                "📄 Download Professional Report",
+                f,
+                file_name="Plant_Disease_Report.pdf",
                 mime="application/pdf"
             )
 
+st.markdown("---")
+st.caption("© 2026 Plant Disease Detection System | Agricultural AI")
