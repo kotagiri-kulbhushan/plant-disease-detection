@@ -33,6 +33,11 @@ st.set_page_config(
 )
 
 # =====================================================
+# BASE DIRECTORY (IMPORTANT FOR DEPLOYMENT)
+# =====================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# =====================================================
 # HEADER
 # =====================================================
 st.markdown("""
@@ -45,11 +50,10 @@ AI-powered Leaf Disease Detection for Farmers & Researchers
 <hr>
 """, unsafe_allow_html=True)
 
-
 # =====================================================
 # MODEL CONFIGURATION
 # =====================================================
-MODEL_PATH = "trained_model.keras"
+MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
 DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
@@ -62,10 +66,13 @@ def load_model():
 
 model = load_model()
 
-# Load class names
-with open("class_names.json", "r") as f:
-    class_names = json.load(f)
+# =====================================================
+# LOAD CLASS NAMES (DEPLOYMENT SAFE)
+# =====================================================
+CLASS_PATH = os.path.join(BASE_DIR, "class_names.json")
 
+with open(CLASS_PATH, "r") as f:
+    class_names = json.load(f)
 
 # =====================================================
 # PDF REPORT GENERATOR
