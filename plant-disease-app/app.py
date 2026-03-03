@@ -31,17 +31,14 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =====================================================
-# HEADER (UI)
+# CENTERED HEADER
 # =====================================================
-st.markdown(
-    "<h1 style='text-align:center;'>Plant Disease Detection System</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align:center;color:gray;'>AI-powered Leaf Diagnosis</p>",
-    unsafe_allow_html=True
-)
-st.markdown("---")
+st.markdown("""
+<h1 style='text-align:center;'>Plant Disease Detection System</h1>
+<p style='text-align:center;color:gray;'>AI-powered Leaf Diagnosis</p>
+<hr style='width:60%; margin:auto;'>
+""", unsafe_allow_html=True)
+
 
 # =====================================================
 # MODEL LOADING
@@ -63,9 +60,9 @@ with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
 
 
 # =====================================================
-# IMAGE ROUNDING FOR PDF
+# ROUND IMAGE FOR PDF
 # =====================================================
-def make_rounded_image(img, radius=40):
+def make_rounded_image(img, radius=50):
     img = img.convert("RGBA")
     mask = Image.new("L", img.size, 0)
     draw = ImageDraw.Draw(mask)
@@ -93,19 +90,13 @@ def generate_pdf(image, disease, confidence, top5):
     elements = []
     styles = getSampleStyleSheet()
 
-    # -------- Custom Styles --------
+    # -------- Styles --------
     title_style = ParagraphStyle(
         name="TitleStyle",
         parent=styles["Title"],
         alignment=1,
         fontSize=22,
-        textColor=colors.HexColor("#2E7D32")  # green theme
-    )
-
-    center_style = ParagraphStyle(
-        name="CenterStyle",
-        parent=styles["Normal"],
-        alignment=1
+        textColor=colors.black
     )
 
     left_style = ParagraphStyle(
@@ -114,7 +105,13 @@ def generate_pdf(image, disease, confidence, top5):
         alignment=0
     )
 
-    # -------- Date (TOP LEFT) --------
+    center_style = ParagraphStyle(
+        name="CenterStyle",
+        parent=styles["Normal"],
+        alignment=1
+    )
+
+    # -------- Date (Top Left) --------
     elements.append(
         Paragraph(
             datetime.now().strftime("%d %B %Y  |  %H:%M"),
@@ -130,23 +127,27 @@ def generate_pdf(image, disease, confidence, top5):
     # Light underline
     line = Table([[""]], colWidths=[6*inch])
     line.setStyle(TableStyle([
-        ("LINEBELOW", (0,0), (-1,-1), 0.5, colors.HexColor("#A5D6A7"))
+        ("LINEBELOW", (0,0), (-1,-1), 0.5, colors.HexColor("#DADADA"))
     ]))
     elements.append(line)
     elements.append(Spacer(1, 25))
 
-    # -------- Rounded Image + Black Border --------
-    rounded = make_rounded_image(image, radius=50)
+    # -------- Rounded Image + Rounded Border --------
+    rounded = make_rounded_image(image, radius=60)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
 
-    img_table = Table([[RLImage(img_path, width=3*inch, height=3*inch)]])
+    img = RLImage(img_path, width=3*inch, height=3*inch)
+
+    img_table = Table([[img]], colWidths=[3.2*inch])
     img_table.setStyle(TableStyle([
-        ("BOX", (0,0), (-1,-1), 2, colors.black),
-        ("LEFTPADDING", (0,0), (-1,-1), 10),
-        ("RIGHTPADDING", (0,0), (-1,-1), 10),
-        ("TOPPADDING", (0,0), (-1,-1), 10),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("BOX", (0,0), (-1,-1), 1.5, colors.black),
+        ("ROUNDEDCORNERS", (0,0), (-1,-1), 15),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("LEFTPADDING", (0,0), (-1,-1), 8),
+        ("RIGHTPADDING", (0,0), (-1,-1), 8),
+        ("TOPPADDING", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
     ]))
 
     elements.append(img_table)
@@ -176,7 +177,7 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    # -------- Top 5 Table --------
+    # -------- Top 5 --------
     elements.append(Paragraph("Top 5 Model Predictions", styles["Heading2"]))
     elements.append(Spacer(1, 15))
 
@@ -196,7 +197,7 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(table)
     elements.append(Spacer(1, 50))
 
-    # -------- Disclaimer (Centered) --------
+    # -------- Disclaimer --------
     elements.append(
         Paragraph(
             "<i>Disclaimer: This report is AI-generated and should be validated by an agricultural expert.</i>",
@@ -211,22 +212,20 @@ def generate_pdf(image, disease, confidence, top5):
 # =====================================================
 # STREAMLIT UI
 # =====================================================
-st.subheader("Upload Leaf Image")
+st.markdown("<h3 style='text-align:center;'>Upload Leaf Image</h3>", unsafe_allow_html=True)
 
 uploaded = st.file_uploader("", type=["jpg", "jpeg", "png"])
 
 if uploaded:
     image = Image.open(uploaded)
 
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.image(image, width=280)
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    st.image(image, width=250)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("")
-
-    colb1, colb2, colb3 = st.columns([1,2,1])
-    with colb2:
-        run = st.button("Diagnose", width=150)
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    run = st.button("Diagnose")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if run:
         img = image.resize((128,128))
@@ -241,10 +240,7 @@ if uploaded:
         clean_main = main.replace("___"," - ")
 
         st.markdown("---")
-        st.markdown(
-            "<h2 style='text-align:center;'>Diagnostic Summary</h2>",
-            unsafe_allow_html=True
-        )
+        st.markdown("<h2 style='text-align:center;'>Diagnostic Summary</h2>", unsafe_allow_html=True)
 
         st.markdown(f"""
         <div style="
@@ -252,23 +248,22 @@ if uploaded:
             padding:25px;
             border-radius:20px;
             color:white;
-            margin-top:20px;">
+            margin-top:20px;
+            text-align:center;">
             <h3>Detected Disease</h3>
             <h2>{clean_main}</h2>
             <p style='font-size:18px;'>Confidence: <b>{main_conf}%</b></p>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("### Top 5 Predictions")
+        st.markdown("<h3 style='text-align:center;'>Top 5 Predictions</h3>", unsafe_allow_html=True)
 
         for i,(label,conf) in enumerate(top5,1):
-            cols = st.columns([1,4,2])
-            cols[0].write(i)
-            cols[1].write(label.replace("___"," - "))
-            cols[2].write(f"{conf}%")
+            st.markdown(f"<p style='text-align:center;'>{i}. {label.replace('___',' - ')} — {conf}%</p>", unsafe_allow_html=True)
 
         pdf_path = generate_pdf(image, main, main_conf, top5)
 
+        st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
         with open(pdf_path,"rb") as f:
             st.download_button(
                 "Download Report",
@@ -276,3 +271,7 @@ if uploaded:
                 file_name="Plant_Disease_Report.pdf",
                 mime="application/pdf"
             )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("<hr style='width:60%; margin:auto;'>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; font-size:12px;'>© 2026 Plant Disease Detection System | Agricultural AI</p>", unsafe_allow_html=True)
