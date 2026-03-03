@@ -135,7 +135,7 @@ def generate_pdf(image, disease, confidence, top5):
         ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
     ]))
     elements.append(line)
-    elements.append(Spacer(1, 18))
+    elements.append(Spacer(1, 20))
 
     # Image
     rounded = make_rounded_image_with_border(image)
@@ -247,10 +247,14 @@ if uploaded:
         """, unsafe_allow_html=True)
 
         st.markdown("""
-        <h3 style='text-align:center;font-weight:bold;font-size:24px;margin-top:30px;'>
-        Top 5 Predictions
-        </h3>
-        """, unsafe_allow_html=True)
+<h2 style='text-align:center;
+           font-weight:800;
+           font-size:28px;
+           margin-top:35px;
+           margin-bottom:20px;'>
+Top 5 Predictions
+</h2>
+""", unsafe_allow_html=True)
 
         for i,(label,conf) in enumerate(top5,1):
             cols = st.columns([1,4,2])
@@ -266,7 +270,7 @@ if uploaded:
         with colY:
             with open(pdf_path,"rb") as f:
                 st.download_button(
-                    label="Download Professional Report",
+                    label="Download Report",
                     data=f,
                     file_name="Plant_Disease_Report.pdf",
                     mime="application/pdf",
