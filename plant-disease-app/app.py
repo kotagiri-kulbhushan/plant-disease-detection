@@ -121,16 +121,15 @@ def generate_pdf(image, disease, confidence, top5):
         alignment=0
     )
 
-    # Date (more space after)
+    # Date
     elements.append(
         Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style)
     )
-    elements.append(Spacer(1, 18))   # Slightly increased space
+    elements.append(Spacer(1, 18))
 
     # Title
     elements.append(Paragraph("Plant Disease Detection Report", title_style))
 
-    # Very little gap before underline
     line = Table([[""]], colWidths=[6*inch])
     line.setStyle(TableStyle([
         ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
@@ -169,7 +168,6 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    # Centered Top 5 Heading
     elements.append(
         Paragraph("Top 5 Model Predictions", center_style)
     )
@@ -248,22 +246,29 @@ if uploaded:
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("### Top 5 Predictions")
+        st.markdown("""
+        <h3 style='text-align:center;font-weight:bold;font-size:24px;margin-top:30px;'>
+        Top 5 Predictions
+        </h3>
+        """, unsafe_allow_html=True)
 
         for i,(label,conf) in enumerate(top5,1):
             cols = st.columns([1,4,2])
-            cols[0].write(i)
-            cols[1].write(label.replace("___"," - "))
-            cols[2].write(f"{conf}%")
+            cols[0].markdown(f"**{i}**")
+            cols[1].markdown(f"**{label.replace('___',' - ')}**")
+            cols[2].markdown(f"**{conf}%**")
 
         pdf_path = generate_pdf(image, main, main_conf, top5)
 
-        colX, colY, colZ = st.columns([2,1,2])
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        colX, colY, colZ = st.columns([1,2,1])
         with colY:
             with open(pdf_path,"rb") as f:
                 st.download_button(
-                    "Download Report",   # One line now
-                    f,
+                    label="Download Professional Report",
+                    data=f,
                     file_name="Plant_Disease_Report.pdf",
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    use_container_width=True
                 )
