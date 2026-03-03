@@ -58,9 +58,9 @@ with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
 
 
 # =====================================================
-# IMAGE ROUNDING WITH THIN BORDER
+# IMAGE ROUNDING WITH VERY THIN BORDER
 # =====================================================
-def make_rounded_image_with_border(img, radius=60, border_width=2):
+def make_rounded_image_with_border(img, radius=60, border_width=1):
     img = img.convert("RGBA")
 
     mask = Image.new("L", img.size, 0)
@@ -119,7 +119,7 @@ def generate_pdf(image, disease, confidence, top5):
     )
     elements.append(Spacer(1, 18))
 
-    # Title Style (no spacing)
+    # Title (no extra spacing)
     title_style = ParagraphStyle(
         name="TitleStyle",
         parent=styles["Title"],
@@ -130,12 +130,11 @@ def generate_pdf(image, disease, confidence, top5):
         spaceAfter=0
     )
 
-    # Title
     elements.append(
         Paragraph("Plant Disease Detection Report", title_style)
     )
 
-    # Underline directly below title
+    # Underline immediately below title
     line = Table([[""]], colWidths=[6*inch])
     line.setStyle(TableStyle([
         ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#A5D6A7")),
@@ -145,9 +144,11 @@ def generate_pdf(image, disease, confidence, top5):
         ("BOTTOMPADDING", (0,0), (-1,-1), 0),
     ]))
     elements.append(line)
-    elements.append(Spacer(1, 12))
 
-    # Rounded Image
+    # Space before image
+    elements.append(Spacer(1, 25))
+
+    # Rounded Image with thin border
     rounded = make_rounded_image_with_border(image)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
@@ -177,9 +178,17 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    # Top 5 Heading
+    # Bigger Top 5 Heading
+    top5_style = ParagraphStyle(
+        name="Top5Style",
+        parent=styles["Heading2"],
+        alignment=1,
+        fontSize=16,
+        textColor=colors.black
+    )
+
     elements.append(
-        Paragraph("<b>Top 5 Model Predictions</b>", center_style)
+        Paragraph("<b>Top 5 Model Predictions</b>", top5_style)
     )
     elements.append(Spacer(1, 15))
 
