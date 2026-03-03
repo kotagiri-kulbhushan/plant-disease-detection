@@ -127,15 +127,23 @@ def generate_pdf(image, disease, confidence, top5):
     )
     elements.append(Spacer(1, 18))
 
-    # Title
-    elements.append(Paragraph("Plant Disease Detection Report", title_style))
+# Title (NO EXTRA SPACE)
+elements.append(Paragraph("Plant Disease Detection Report", title_style))
 
-    line = Table([[""]], colWidths=[6*inch])
-    line.setStyle(TableStyle([
-        ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
-    ]))
-    elements.append(line)
-    elements.append(Spacer(1, 20))
+# Remove default paragraph spacing
+title_style.spaceAfter = 0
+title_style.spaceBefore = 0
+
+# Underline immediately
+line = Table([[""]], colWidths=[6*inch])
+line.setStyle(TableStyle([
+    ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
+]))
+
+elements.append(line)
+
+# Small controlled spacing after line
+elements.append(Spacer(1, 12))
 
     # Image
     rounded = make_rounded_image_with_border(image)
