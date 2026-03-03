@@ -10,8 +10,12 @@ import tempfile
 
 # PDF imports
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer,
-    Image as RLImage, Table, TableStyle
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Image as RLImage,
+    Table,
+    TableStyle
 )
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
@@ -29,13 +33,13 @@ st.set_page_config(
 )
 
 # =====================================================
-# HEADER SECTION
+# HEADER
 # =====================================================
 st.markdown("""
-<h1 style='text-align: center; color: #2E7D32;'>
+<h1 style='text-align:center; color:#2E7D32;'>
 Plant Health Diagnostic System
 </h1>
-<p style='text-align: center; color: gray;'>
+<p style='text-align:center; color:gray;'>
 AI-powered Leaf Disease Detection for Farmers & Researchers
 </p>
 <hr>
@@ -52,14 +56,13 @@ DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Preparing AI model... Please wait."):
+        with st.spinner("Preparing AI model..."):
             gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
-    model = tf.keras.models.load_model(MODEL_PATH)
-    return model
+    return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model()
 
-# Load class labels
+# Load class names
 with open("class_names.json", "r") as f:
     class_names = json.load(f)
 
@@ -78,7 +81,7 @@ def generate_pdf(image, disease, confidence, top5_results):
     elements.append(Spacer(1, 12))
 
     elements.append(Paragraph(
-        f"Report Generated On: {datetime.now().strftime('%d %B %Y, %H:%M')}",
+        f"Generated on: {datetime.now().strftime('%d %B %Y, %H:%M')}",
         styles["Normal"]
     ))
     elements.append(Spacer(1, 20))
@@ -95,7 +98,7 @@ def generate_pdf(image, disease, confidence, top5_results):
     elements.append(Paragraph(f"<b>Model Confidence:</b> {confidence}%", styles["Normal"]))
     elements.append(Spacer(1, 20))
 
-    # Top 5 Predictions
+    # Top 5 Predictions Table
     data = [["Rank", "Condition", "Confidence (%)"]]
     for idx, (label, conf) in enumerate(top5_results, start=1):
         data.append([idx, label, conf])
@@ -113,7 +116,7 @@ def generate_pdf(image, disease, confidence, top5_results):
 
     elements.append(Spacer(1, 30))
     elements.append(Paragraph(
-        "Note: This report is AI-generated and should be verified by an agricultural expert if required.",
+        "Note: This report is AI-generated and should be verified by an agricultural expert.",
         styles["Normal"]
     ))
 
@@ -155,15 +158,15 @@ if uploaded_file:
             ]
 
         # =====================================================
-        # RESULT DISPLAY
+        # DISPLAY RESULTS
         # =====================================================
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Diagnosis Result")
 
         if "healthy" in main_disease.lower():
-            st.success(f"Status: Healthy Leaf")
+            st.success("Status: Healthy Leaf")
         else:
-            st.error(f"Status: Disease Detected")
+            st.error("Status: Disease Detected")
 
         st.markdown(f"""
         **Identified Condition:** {main_disease}  
@@ -195,4 +198,4 @@ if uploaded_file:
             )
 
 st.markdown("<hr>", unsafe_allow_html=True)
-st.caption("© 2026 Plant Health AI System | Designed for Real-World Agricultural Use")[i]} — {round(prediction[i]*100,2)}%")
+st.caption("© 2026 Plant Health AI System | Designed for Real-World Agricultural Use")
