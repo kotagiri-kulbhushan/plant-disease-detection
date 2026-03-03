@@ -24,7 +24,7 @@ from reportlab.lib.pagesizes import A4
 
 
 # =====================================================
-# PAGE CONFIG
+# PAGE CONFIGURATION
 # =====================================================
 st.set_page_config(
     page_title="Plant Health Diagnostic System",
@@ -32,9 +32,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# =====================================================
-# BASE DIRECTORY (IMPORTANT FOR DEPLOYMENT)
-# =====================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =====================================================
@@ -44,14 +41,14 @@ st.markdown("""
 <h1 style='text-align:center; color:#2E7D32;'>
 Plant Health Diagnostic System
 </h1>
-<p style='text-align:center; color:gray;'>
+<p style='text-align:center; text-align:center; color:gray;'>
 AI-powered Leaf Disease Detection for Farmers & Researchers
 </p>
 <hr>
 """, unsafe_allow_html=True)
 
 # =====================================================
-# MODEL CONFIGURATION
+# MODEL CONFIG
 # =====================================================
 MODEL_PATH = os.path.join(BASE_DIR, "trained_model.keras")
 FILE_ID = "13I2TotbKMvTjrOmKDTD6PlBa3zik3OS-"
@@ -75,7 +72,7 @@ with open(CLASS_PATH, "r") as f:
     class_names = json.load(f)
 
 # =====================================================
-# PDF REPORT GENERATOR
+# PDF GENERATOR
 # =====================================================
 def generate_pdf(image, disease, confidence, top5_results):
 
@@ -84,8 +81,11 @@ def generate_pdf(image, disease, confidence, top5_results):
     elements = []
     styles = getSampleStyleSheet()
 
+    clean_disease = disease.replace("___", " - ")
+
+    # Header
     elements.append(Paragraph("<b>Plant Health Diagnostic Report</b>", styles["Title"]))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 10))
 
     elements.append(Paragraph(
         f"Generated on: {datetime.now().strftime('%d %B %Y, %H:%M')}",
@@ -93,37 +93,53 @@ def generate_pdf(image, disease, confidence, top5_results):
     ))
     elements.append(Spacer(1, 20))
 
-    # Save image temporarily
+    # Leaf Image
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     image.save(img_path)
-
-    elements.append(RLImage(img_path, width=3*inch, height=3*inch))
+    elements.append(RLImage(img_path, width=3.5*inch, height=3.5*inch))
     elements.append(Spacer(1, 20))
 
-    elements.append(Paragraph(f"<b>Primary Diagnosis:</b> {disease}", styles["Heading2"]))
+    # Diagnosis Section
+    elements.append(Paragraph("<b>Primary Diagnosis</b>", styles["Heading2"]))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph(clean_disease, styles["Heading3"]))
     elements.append(Spacer(1, 6))
-    elements.append(Paragraph(f"<b>Model Confidence:</b> {confidence}%", styles["Normal"]))
+    elements.append(Paragraph(f"Model Confidence: {confidence}%", styles["Normal"]))
     elements.append(Spacer(1, 20))
 
-    # Top 5 Predictions Table
+    # Interpretation
+    if confidence >= 90:
+        interpretation = "High confidence prediction."
+    elif confidence >= 70:
+        interpretation = "Moderate confidence prediction."
+    else:
+        interpretation = "Low confidence prediction. Further verification recommended."
+
+    elements.append(Paragraph("<b>Interpretation</b>", styles["Heading3"]))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(interpretation, styles["Normal"]))
+    elements.append(Spacer(1, 20))
+
+    # Top Predictions Table
     data = [["Rank", "Condition", "Confidence (%)"]]
     for idx, (label, conf) in enumerate(top5_results, start=1):
-        data.append([idx, label, conf])
+        label_clean = label.replace("___", " - ")
+        data.append([idx, label_clean, conf])
 
     table = Table(data, colWidths=[1*inch, 3*inch, 1.5*inch])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("GRID", (0, 0), (-1, -1), 1, colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8F5E9")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("FONTSIZE", (0, 0), (-1, -1), 10),
     ]))
 
     elements.append(Paragraph("<b>Top 5 Model Predictions</b>", styles["Heading3"]))
     elements.append(Spacer(1, 10))
     elements.append(table)
-
     elements.append(Spacer(1, 30))
+
     elements.append(Paragraph(
-        "Note: This report is AI-generated and should be verified by an agricultural expert.",
+        "Disclaimer: This report is AI-generated and should be validated by an agricultural expert.",
         styles["Normal"]
     ))
 
@@ -132,7 +148,7 @@ def generate_pdf(image, disease, confidence, top5_results):
 
 
 # =====================================================
-# IMAGE UPLOAD SECTION
+# IMAGE UPLOAD
 # =====================================================
 st.subheader("Leaf Image Upload")
 
@@ -167,29 +183,52 @@ if uploaded_file:
         # =====================================================
         # DISPLAY RESULTS
         # =====================================================
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Diagnosis Result")
+        st.markdown("---")
+        st.subheader("Diagnostic Summary")
+
+        clean_disease = main_disease.replace("___", " - ")
+
+        # Confidence Interpretation
+        if main_confidence >= 90:
+            confidence_level = "High Confidence"
+            confidence_color = "green"
+        elif main_confidence >= 70:
+            confidence_level = "Moderate Confidence"
+            confidence_color = "orange"
+        else:
+            confidence_level = "Low Confidence"
+            confidence_color = "red"
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("### Identified Condition")
+            st.markdown(f"<h4 style='color:#2E7D32'>{clean_disease}</h4>", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("### Confidence Level")
+            st.markdown(
+                f"<h4 style='color:{confidence_color}'>{main_confidence}%</h4>",
+                unsafe_allow_html=True
+            )
+            st.caption(confidence_level)
 
         if "healthy" in main_disease.lower():
-            st.success("Status: Healthy Leaf")
+            st.success("Leaf Status: Healthy")
         else:
-            st.error("Status: Disease Detected")
+            st.error("Leaf Status: Disease Detected")
 
-        st.markdown(f"""
-        **Identified Condition:** {main_disease}  
-        **Confidence Level:** {main_confidence}%
-        """)
-
-        st.subheader("Model Confidence Distribution")
+        st.markdown("### Model Confidence Breakdown")
 
         for label, conf in top5_results:
-            progress_value = int(round(conf))  # FIXED HERE
+            label_clean = label.replace("___", " - ")
+            progress_value = int(round(conf))
             st.progress(progress_value)
-            st.write(f"{label} — {progress_value}%")
+            st.write(f"{label_clean} — {progress_value}%")
 
-        # =====================================================
+        st.markdown("---")
+
         # PDF DOWNLOAD
-        # =====================================================
         pdf_path = generate_pdf(
             image,
             main_disease,
@@ -205,4 +244,3 @@ if uploaded_file:
                 mime="application/pdf"
             )
 
-st.markdown("<hr>", unsafe_allow_html=True)
