@@ -87,16 +87,16 @@ def generate_pdf(image, disease, confidence, top5):
     doc = SimpleDocTemplate(
         pdf_file.name,
         pagesize=A4,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40
+        rightMargin=50,
+        leftMargin=50,
+        topMargin=50,
+        bottomMargin=50
     )
 
     elements = []
     styles = getSampleStyleSheet()
 
-    # Custom styles
+    # ---------- Custom Styles ----------
     center_title = ParagraphStyle(
         name="CenterTitle",
         parent=styles["Title"],
@@ -104,90 +104,100 @@ def generate_pdf(image, disease, confidence, top5):
         fontSize=20
     )
 
-    right_align = ParagraphStyle(
-        name="RightAlign",
+    center_text = ParagraphStyle(
+        name="CenterText",
         parent=styles["Normal"],
-        alignment=2
+        alignment=1
     )
 
-    # Date at top right
+    left_align = ParagraphStyle(
+        name="LeftAlign",
+        parent=styles["Normal"],
+        alignment=0
+    )
+
+    # ---------- Date (TOP LEFT) ----------
     elements.append(
         Paragraph(
             datetime.now().strftime("%d %B %Y  |  %H:%M"),
-            right_align
+            left_align
         )
     )
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 15))
 
-    # Title centered
+    # ---------- Title ----------
     elements.append(Paragraph("Plant Disease Detection Report", center_title))
-    elements.append(Spacer(1, 25))
+    elements.append(Spacer(1, 30))
 
-    # Rounded image
-    rounded = make_rounded_image(image)
+    # ---------- Rounded Image ----------
+    rounded = make_rounded_image(image, radius=50)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
 
     elements.append(RLImage(img_path, width=3*inch, height=3*inch))
-    elements.append(Spacer(1, 25))
+    elements.append(Spacer(1, 30))
 
     clean = disease.replace("___", " - ")
 
-    # Highlighted Diagnosis Box
+    # ---------- Highlighted Diagnosis Box ----------
     diagnosis_data = [
         ["Detected Disease", clean],
         ["Confidence", f"{confidence}%"]
     ]
 
-    diag_table = Table(diagnosis_data, colWidths=[2.5*inch, 2.5*inch])
+    diag_table = Table(diagnosis_data, colWidths=[2.7*inch, 2.3*inch])
     diag_table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#E0E7FF")),
+        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#E6F4EA")),  # light green
         ("TEXTCOLOR", (0,0), (-1,-1), colors.black),
         ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 12),
+        ("FONTSIZE", (0,0), (-1,-1), 13),
         ("ALIGN", (1,0), (1,-1), "RIGHT"),
-        ("INNERGRID", (0,0), (-1,-1), 0.5, colors.white),
-        ("BOX", (0,0), (-1,-1), 1, colors.HexColor("#C7D2FE")),
-        ("LEFTPADDING", (0,0), (-1,-1), 12),
-        ("RIGHTPADDING", (0,0), (-1,-1), 12),
-        ("TOPPADDING", (0,0), (-1,-1), 12),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 12),
+        ("BOX", (0,0), (-1,-1), 1.5, colors.HexColor("#34A853")),
+        ("LEFTPADDING", (0,0), (-1,-1), 14),
+        ("RIGHTPADDING", (0,0), (-1,-1), 14),
+        ("TOPPADDING", (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
     ]))
 
     elements.append(diag_table)
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 40))
 
-    # Top 5 Section
+    # ---------- Top 5 Section ----------
     elements.append(Paragraph("Top 5 Model Predictions", styles["Heading2"]))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 15))
 
     data = [["Rank", "Disease", "Confidence"]]
     for i, (label, conf) in enumerate(top5, 1):
         data.append([i, label.replace("___", " - "), f"{conf}%"])
 
-    table = Table(data, colWidths=[1*inch, 3*inch, 1.2*inch])
+    table = Table(data, colWidths=[1*inch, 3.2*inch, 1.2*inch])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#6366F1")),
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#34A853")),
         ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#C6E6CE")),
         ("ALIGN", (2,1), (2,-1), "RIGHT"),
-        ("FONTSIZE", (0,0), (-1,-1), 10),
+        ("FONTSIZE", (0,0), (-1,-1), 11),
+        ("LEFTPADDING", (0,0), (-1,-1), 8),
+        ("RIGHTPADDING", (0,0), (-1,-1), 8),
+        ("TOPPADDING", (0,0), (-1,-1), 6),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 30))
 
-    # Disclaimer
+    # ---------- Extra Space Before Disclaimer ----------
+    elements.append(Spacer(1, 50))
+
+    # ---------- Disclaimer (Centered) ----------
     elements.append(
         Paragraph(
             "<i>Disclaimer: This report is AI-generated and should be validated by an agricultural expert.</i>",
-            styles["Normal"]
+            center_text
         )
     )
 
     doc.build(elements)
     return pdf_file.name
-
 
 # =====================================================
 # IMAGE UPLOAD UI
