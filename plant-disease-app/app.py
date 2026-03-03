@@ -31,7 +31,7 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =====================================================
-# HEADER
+# HEADER (UI)
 # =====================================================
 st.markdown(
     "<h1 style='text-align:center;'>Plant Disease Detection System</h1>",
@@ -63,27 +63,24 @@ with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
 
 
 # =====================================================
-# ROUND IMAGE FUNCTION FOR PDF
+# IMAGE ROUNDING FOR PDF
 # =====================================================
 def make_rounded_image(img, radius=40):
     img = img.convert("RGBA")
     mask = Image.new("L", img.size, 0)
     draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle(
-        [(0, 0), img.size],
-        radius=radius,
-        fill=255
-    )
+    draw.rounded_rectangle([(0, 0), img.size], radius=radius, fill=255)
     img.putalpha(mask)
     return img
 
 
 # =====================================================
-# PDF GENERATION (PROFESSIONAL STRUCTURE)
+# PDF GENERATION
 # =====================================================
 def generate_pdf(image, disease, confidence, top5):
 
     pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+
     doc = SimpleDocTemplate(
         pdf_file.name,
         pagesize=A4,
@@ -96,50 +93,68 @@ def generate_pdf(image, disease, confidence, top5):
     elements = []
     styles = getSampleStyleSheet()
 
-    # ---------- Custom Styles ----------
-    center_title = ParagraphStyle(
-        name="CenterTitle",
+    # -------- Custom Styles --------
+    title_style = ParagraphStyle(
+        name="TitleStyle",
         parent=styles["Title"],
         alignment=1,
-        fontSize=20
+        fontSize=22,
+        textColor=colors.HexColor("#2E7D32")  # green theme
     )
 
-    center_text = ParagraphStyle(
-        name="CenterText",
+    center_style = ParagraphStyle(
+        name="CenterStyle",
         parent=styles["Normal"],
         alignment=1
     )
 
-    left_align = ParagraphStyle(
-        name="LeftAlign",
+    left_style = ParagraphStyle(
+        name="LeftStyle",
         parent=styles["Normal"],
         alignment=0
     )
 
-    # ---------- Date (TOP LEFT) ----------
+    # -------- Date (TOP LEFT) --------
     elements.append(
         Paragraph(
             datetime.now().strftime("%d %B %Y  |  %H:%M"),
-            left_align
+            left_style
         )
     )
     elements.append(Spacer(1, 15))
 
-    # ---------- Title ----------
-    elements.append(Paragraph("Plant Disease Detection Report", center_title))
-    elements.append(Spacer(1, 30))
+    # -------- Main Title --------
+    elements.append(Paragraph("Plant Disease Detection Report", title_style))
+    elements.append(Spacer(1, 6))
 
-    # ---------- Rounded Image ----------
+    # Light underline
+    line = Table([[""]], colWidths=[6*inch])
+    line.setStyle(TableStyle([
+        ("LINEBELOW", (0,0), (-1,-1), 0.5, colors.HexColor("#A5D6A7"))
+    ]))
+    elements.append(line)
+    elements.append(Spacer(1, 25))
+
+    # -------- Rounded Image + Black Border --------
     rounded = make_rounded_image(image, radius=50)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
 
-    elements.append(RLImage(img_path, width=3*inch, height=3*inch))
+    img_table = Table([[RLImage(img_path, width=3*inch, height=3*inch)]])
+    img_table.setStyle(TableStyle([
+        ("BOX", (0,0), (-1,-1), 2, colors.black),
+        ("LEFTPADDING", (0,0), (-1,-1), 10),
+        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+        ("TOPPADDING", (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+    ]))
+
+    elements.append(img_table)
     elements.append(Spacer(1, 30))
 
     clean = disease.replace("___", " - ")
 
-    # ---------- Highlighted Diagnosis Box ----------
+    # -------- Diagnosis Box --------
     diagnosis_data = [
         ["Detected Disease", clean],
         ["Confidence", f"{confidence}%"]
@@ -147,8 +162,7 @@ def generate_pdf(image, disease, confidence, top5):
 
     diag_table = Table(diagnosis_data, colWidths=[2.7*inch, 2.3*inch])
     diag_table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#E6F4EA")),  # light green
-        ("TEXTCOLOR", (0,0), (-1,-1), colors.black),
+        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#E6F4EA")),
         ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
         ("FONTSIZE", (0,0), (-1,-1), 13),
         ("ALIGN", (1,0), (1,-1), "RIGHT"),
@@ -162,7 +176,7 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    # ---------- Top 5 Section ----------
+    # -------- Top 5 Table --------
     elements.append(Paragraph("Top 5 Model Predictions", styles["Heading2"]))
     elements.append(Spacer(1, 15))
 
@@ -177,30 +191,25 @@ def generate_pdf(image, disease, confidence, top5):
         ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#C6E6CE")),
         ("ALIGN", (2,1), (2,-1), "RIGHT"),
         ("FONTSIZE", (0,0), (-1,-1), 11),
-        ("LEFTPADDING", (0,0), (-1,-1), 8),
-        ("RIGHTPADDING", (0,0), (-1,-1), 8),
-        ("TOPPADDING", (0,0), (-1,-1), 6),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
     ]))
 
     elements.append(table)
-
-    # ---------- Extra Space Before Disclaimer ----------
     elements.append(Spacer(1, 50))
 
-    # ---------- Disclaimer (Centered) ----------
+    # -------- Disclaimer (Centered) --------
     elements.append(
         Paragraph(
             "<i>Disclaimer: This report is AI-generated and should be validated by an agricultural expert.</i>",
-            center_text
+            center_style
         )
     )
 
     doc.build(elements)
     return pdf_file.name
 
+
 # =====================================================
-# IMAGE UPLOAD UI
+# STREAMLIT UI
 # =====================================================
 st.subheader("Upload Leaf Image")
 
@@ -217,7 +226,7 @@ if uploaded:
 
     colb1, colb2, colb3 = st.columns([1,2,1])
     with colb2:
-        run = st.button("Run AI Diagnosis", use_container_width=True)
+        run = st.button("Diagnose", width=150)
 
     if run:
         img = image.resize((128,128))
@@ -239,7 +248,7 @@ if uploaded:
 
         st.markdown(f"""
         <div style="
-            background: linear-gradient(135deg,#6366F1,#8B5CF6);
+            background: linear-gradient(135deg,#34A853,#66BB6A);
             padding:25px;
             border-radius:20px;
             color:white;
@@ -262,7 +271,7 @@ if uploaded:
 
         with open(pdf_path,"rb") as f:
             st.download_button(
-                "Download Professional Report",
+                "Download Report",
                 f,
                 file_name="Plant_Disease_Report.pdf",
                 mime="application/pdf"
