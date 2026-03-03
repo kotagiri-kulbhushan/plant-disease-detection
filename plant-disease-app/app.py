@@ -67,7 +67,7 @@ def load_model():
 model = load_model()
 
 # =====================================================
-# LOAD CLASS NAMES (DEPLOYMENT SAFE)
+# LOAD CLASS NAMES
 # =====================================================
 CLASS_PATH = os.path.join(BASE_DIR, "class_names.json")
 
@@ -157,10 +157,10 @@ if uploaded_file:
             top5_idx = prediction.argsort()[-5:][::-1]
 
             main_disease = class_names[top5_idx[0]]
-            main_confidence = round(prediction[top5_idx[0]] * 100, 2)
+            main_confidence = round(float(prediction[top5_idx[0]]) * 100, 2)
 
             top5_results = [
-                (class_names[i], round(prediction[i] * 100, 2))
+                (class_names[i], round(float(prediction[i]) * 100, 2))
                 for i in top5_idx
             ]
 
@@ -183,8 +183,9 @@ if uploaded_file:
         st.subheader("Model Confidence Distribution")
 
         for label, conf in top5_results:
-            st.progress(conf / 100)
-            st.write(f"{label} — {conf}%")
+            progress_value = int(round(conf))  # FIXED HERE
+            st.progress(progress_value)
+            st.write(f"{label} — {progress_value}%")
 
         # =====================================================
         # PDF DOWNLOAD
@@ -205,4 +206,3 @@ if uploaded_file:
             )
 
 st.markdown("<hr>", unsafe_allow_html=True)
-st.caption("© 2026 Plant Health AI System | Designed for Real-World Agricultural Use")
