@@ -31,17 +31,12 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =====================================================
-# HEADER (UI)
+# HEADER
 # =====================================================
-st.markdown(
-    "<h1 style='text-align:center;'>Plant Disease Detection System</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align:center;color:gray;'>AI-powered Leaf Diagnosis</p>",
-    unsafe_allow_html=True
-)
+st.markdown("<h1 style='text-align:center;'>Plant Disease Detection System</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:gray;'>AI-powered Leaf Diagnosis</p>", unsafe_allow_html=True)
 st.markdown("---")
+
 
 # =====================================================
 # MODEL LOADING
@@ -63,25 +58,18 @@ with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
 
 
 # =====================================================
-# IMAGE ROUNDING + BORDER FOR PDF
+# ROUNDED IMAGE WITH THIN BORDER
 # =====================================================
-def make_rounded_image_with_border(img, radius=50, border_width=6):
+def make_rounded_image_with_border(img, radius=60, border_width=2):
     img = img.convert("RGBA")
 
-    # Create mask for rounded corners
     mask = Image.new("L", img.size, 0)
     draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle(
-        [(border_width, border_width),
-         (img.size[0]-border_width, img.size[1]-border_width)],
-        radius=radius,
-        fill=255
-    )
+    draw.rounded_rectangle([(0, 0), img.size], radius=radius, fill=255)
 
     rounded = Image.new("RGBA", img.size)
     rounded.paste(img, (0, 0), mask)
 
-    # Draw rounded border
     border_draw = ImageDraw.Draw(rounded)
     border_draw.rounded_rectangle(
         [(border_width//2, border_width//2),
@@ -134,27 +122,21 @@ def generate_pdf(image, disease, confidence, top5):
     )
 
     # Date
-    elements.append(
-        Paragraph(
-            datetime.now().strftime("%d %B %Y  |  %H:%M"),
-            left_style
-        )
-    )
-    elements.append(Spacer(1, 15))
+    elements.append(Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style))
+    elements.append(Spacer(1, 10))
 
-    # Title
+    # Title (no extra gap)
     elements.append(Paragraph("Plant Disease Detection Report", title_style))
-    elements.append(Spacer(1, 5))
 
     line = Table([[""]], colWidths=[6*inch])
     line.setStyle(TableStyle([
-        ("LINEBELOW", (0,0), (-1,-1), 0.5, colors.HexColor("#A5D6A7"))
+        ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
     ]))
     elements.append(line)
-    elements.append(Spacer(1, 25))
+    elements.append(Spacer(1, 20))
 
-    # Rounded Image with Rounded Border
-    rounded = make_rounded_image_with_border(image, radius=60)
+    # Rounded Image with Thin Border
+    rounded = make_rounded_image_with_border(image)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
 
@@ -163,7 +145,6 @@ def generate_pdf(image, disease, confidence, top5):
 
     clean = disease.replace("___", " - ")
 
-    # Diagnosis Box
     diagnosis_data = [
         ["Detected Disease", clean],
         ["Confidence", f"{confidence}%"]
@@ -175,7 +156,7 @@ def generate_pdf(image, disease, confidence, top5):
         ("FONTNAME", (0,0), (-1,-1), "Helvetica-Bold"),
         ("FONTSIZE", (0,0), (-1,-1), 13),
         ("ALIGN", (1,0), (1,-1), "RIGHT"),
-        ("BOX", (0,0), (-1,-1), 1.5, colors.HexColor("#34A853")),
+        ("BOX", (0,0), (-1,-1), 1.2, colors.HexColor("#34A853")),
         ("LEFTPADDING", (0,0), (-1,-1), 14),
         ("RIGHTPADDING", (0,0), (-1,-1), 14),
         ("TOPPADDING", (0,0), (-1,-1), 14),
@@ -185,7 +166,6 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    # Top 5
     elements.append(Paragraph("Top 5 Model Predictions", styles["Heading2"]))
     elements.append(Spacer(1, 15))
 
@@ -230,7 +210,6 @@ if uploaded:
     with col2:
         st.image(image, width=280)
 
-    # ✅ Diagnose Button Perfectly Centered
     colA, colB, colC = st.columns([2,1,2])
     with colB:
         run = st.button("Diagnose")
@@ -248,10 +227,7 @@ if uploaded:
         clean_main = main.replace("___"," - ")
 
         st.markdown("---")
-        st.markdown(
-            "<h2 style='text-align:center;'>Diagnostic Summary</h2>",
-            unsafe_allow_html=True
-        )
+        st.markdown("<h2 style='text-align:center;'>Diagnostic Summary</h2>", unsafe_allow_html=True)
 
         st.markdown(f"""
         <div style="
@@ -276,10 +252,12 @@ if uploaded:
 
         pdf_path = generate_pdf(image, main, main_conf, top5)
 
-        with open(pdf_path,"rb") as f:
-            st.download_button(
-                "Download Report",
-                f,
-                file_name="Plant_Disease_Report.pdf",
-                mime="application/pdf"
-            )
+        colX, colY, colZ = st.columns([2,1,2])
+        with colY:
+            with open(pdf_path,"rb") as f:
+                st.download_button(
+                    "Download Report",
+                    f,
+                    file_name="Plant_Disease_Report.pdf",
+                    mime="application/pdf"
+                )
