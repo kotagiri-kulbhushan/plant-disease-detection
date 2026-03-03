@@ -58,7 +58,7 @@ with open(os.path.join(BASE_DIR, "class_names.json"), "r") as f:
 
 
 # =====================================================
-# ROUNDED IMAGE WITH THIN BORDER
+# IMAGE ROUNDING WITH THIN BORDER
 # =====================================================
 def make_rounded_image_with_border(img, radius=60, border_width=2):
     img = img.convert("RGBA")
@@ -101,12 +101,10 @@ def generate_pdf(image, disease, confidence, top5):
     elements = []
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle(
-        name="TitleStyle",
-        parent=styles["Title"],
-        alignment=1,
-        fontSize=22,
-        textColor=colors.black
+    left_style = ParagraphStyle(
+        name="LeftStyle",
+        parent=styles["Normal"],
+        alignment=0
     )
 
     center_style = ParagraphStyle(
@@ -115,66 +113,50 @@ def generate_pdf(image, disease, confidence, top5):
         alignment=1
     )
 
-    left_style = ParagraphStyle(
-        name="LeftStyle",
-        parent=styles["Normal"],
-        alignment=0
-    )
-
     # Date
     elements.append(
         Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style)
     )
     elements.append(Spacer(1, 18))
 
-# -------- Date --------
-elements.append(
-    Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style)
-)
-elements.append(Spacer(1, 18))
+    # Title Style (no spacing)
+    title_style = ParagraphStyle(
+        name="TitleStyle",
+        parent=styles["Title"],
+        alignment=1,
+        fontSize=22,
+        textColor=colors.black,
+        spaceBefore=0,
+        spaceAfter=0
+    )
 
+    # Title
+    elements.append(
+        Paragraph("Plant Disease Detection Report", title_style)
+    )
 
-# -------- Title Style (NO DEFAULT SPACING) --------
-title_style = ParagraphStyle(
-    name="TitleStyle",
-    parent=styles["Title"],
-    alignment=1,
-    fontSize=22,
-    textColor=colors.black,
-    spaceBefore=0,
-    spaceAfter=0
-)
+    # Underline directly below title
+    line = Table([[""]], colWidths=[6*inch])
+    line.setStyle(TableStyle([
+        ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#A5D6A7")),
+        ("LEFTPADDING", (0,0), (-1,-1), 0),
+        ("RIGHTPADDING", (0,0), (-1,-1), 0),
+        ("TOPPADDING", (0,0), (-1,-1), 0),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 0),
+    ]))
+    elements.append(line)
+    elements.append(Spacer(1, 12))
 
-# -------- Title --------
-elements.append(
-    Paragraph("Plant Disease Detection Report", title_style)
-)
-
-# -------- Underline (Immediately Below Title) --------
-line = Table([[""]], colWidths=[6*inch])
-line.setStyle(TableStyle([
-    ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#A5D6A7")),
-    ("LEFTPADDING", (0,0), (-1,-1), 0),
-    ("RIGHTPADDING", (0,0), (-1,-1), 0),
-    ("TOPPADDING", (0,0), (-1,-1), 0),
-    ("BOTTOMPADDING", (0,0), (-1,-1), 0),
-]))
-
-elements.append(line)
-
-# Controlled spacing AFTER line
-elements.append(Spacer(1, 12))
-
-    # Image
+    # Rounded Image
     rounded = make_rounded_image_with_border(image)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
-
     elements.append(RLImage(img_path, width=3*inch, height=3*inch))
     elements.append(Spacer(1, 30))
 
     clean = disease.replace("___", " - ")
 
+    # Diagnosis Box
     diagnosis_data = [
         ["Detected Disease", clean],
         ["Confidence", f"{confidence}%"]
@@ -192,12 +174,12 @@ elements.append(Spacer(1, 12))
         ("TOPPADDING", (0,0), (-1,-1), 14),
         ("BOTTOMPADDING", (0,0), (-1,-1), 14),
     ]))
-
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
+    # Top 5 Heading
     elements.append(
-        Paragraph("Top 5 Model Predictions", center_style)
+        Paragraph("<b>Top 5 Model Predictions</b>", center_style)
     )
     elements.append(Spacer(1, 15))
 
@@ -213,7 +195,6 @@ elements.append(Spacer(1, 12))
         ("ALIGN", (2,1), (2,-1), "RIGHT"),
         ("FONTSIZE", (0,0), (-1,-1), 11),
     ]))
-
     elements.append(table)
     elements.append(Spacer(1, 50))
 
@@ -275,14 +256,14 @@ if uploaded:
         """, unsafe_allow_html=True)
 
         st.markdown("""
-<h2 style='text-align:center;
-           font-weight:800;
-           font-size:28px;
-           margin-top:35px;
-           margin-bottom:20px;'>
-Top 5 Predictions
-</h2>
-""", unsafe_allow_html=True)
+        <h2 style='text-align:center;
+                   font-weight:800;
+                   font-size:28px;
+                   margin-top:35px;
+                   margin-bottom:20px;'>
+        Top 5 Predictions
+        </h2>
+        """, unsafe_allow_html=True)
 
         for i,(label,conf) in enumerate(top5,1):
             cols = st.columns([1,4,2])
