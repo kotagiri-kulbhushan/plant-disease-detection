@@ -121,21 +121,24 @@ def generate_pdf(image, disease, confidence, top5):
         alignment=0
     )
 
-    # Date
-    elements.append(Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style))
-    elements.append(Spacer(1, 10))
+    # Date (more space after)
+    elements.append(
+        Paragraph(datetime.now().strftime("%d %B %Y  |  %H:%M"), left_style)
+    )
+    elements.append(Spacer(1, 18))   # Slightly increased space
 
-    # Title (no extra gap)
+    # Title
     elements.append(Paragraph("Plant Disease Detection Report", title_style))
 
+    # Very little gap before underline
     line = Table([[""]], colWidths=[6*inch])
     line.setStyle(TableStyle([
         ("LINEBELOW", (0,0), (-1,-1), 0.4, colors.HexColor("#A5D6A7"))
     ]))
     elements.append(line)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 18))
 
-    # Rounded Image with Thin Border
+    # Image
     rounded = make_rounded_image_with_border(image)
     img_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
     rounded.save(img_path, format="PNG")
@@ -166,7 +169,10 @@ def generate_pdf(image, disease, confidence, top5):
     elements.append(diag_table)
     elements.append(Spacer(1, 40))
 
-    elements.append(Paragraph("Top 5 Model Predictions", styles["Heading2"]))
+    # Centered Top 5 Heading
+    elements.append(
+        Paragraph("Top 5 Model Predictions", center_style)
+    )
     elements.append(Spacer(1, 15))
 
     data = [["Rank", "Disease", "Confidence"]]
@@ -256,7 +262,7 @@ if uploaded:
         with colY:
             with open(pdf_path,"rb") as f:
                 st.download_button(
-                    "Download Report",
+                    "Download Report",   # One line now
                     f,
                     file_name="Plant_Disease_Report.pdf",
                     mime="application/pdf"
