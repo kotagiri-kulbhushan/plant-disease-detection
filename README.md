@@ -98,8 +98,8 @@ The system automatically generates a downloadable PDF report after prediction.
 
 Example reports:
 
-- [Sample Report 1](reports/Plant_Disease_Report (sample report 1).pdf)
-- [Sample Report 2](reports/Plant_Disease_Report (sample report 2).pdf)
+- [Sample Report 1](reports/Plant_Disease_Report%20(sample%20report%201).pdf)
+- [Sample Report 2](reports/Plant_Disease_Report%20(sample%20report%202).pdf)
 
 Each report includes:
 
