@@ -60,7 +60,7 @@ Model evaluation included:
 
 # 🖼 Dataset Sample
 
-![Dataset Sample](images/dataset_samples.png)
+![Dataset Sample](images/dataset_samples.jpeg)
 
 Example images from the dataset showing different crops and disease types used during model training.
 
@@ -70,7 +70,7 @@ Example images from the dataset showing different crops and disease types used d
 
 ## Training vs Validation Accuracy
 
-![Training Accuracy](images/training_accuracy.png)
+![Training Accuracy](images/training_accuracy.jpeg)
 
 The model shows stable convergence with increasing validation accuracy across epochs.
 
@@ -78,7 +78,7 @@ The model shows stable convergence with increasing validation accuracy across ep
 
 ## Training vs Validation Loss
 
-![Training Loss](images/training_loss.png)
+![Training Loss](images/training_loss.jpeg)
 
 Loss decreases consistently, indicating effective learning and minimal overfitting.
 
@@ -86,7 +86,7 @@ Loss decreases consistently, indicating effective learning and minimal overfitti
 
 # 🔎 Confusion Matrix
 
-![Confusion Matrix](images/confusion_matrix.png)
+![Confusion Matrix](images/confusion_matrix.jpeg)
 
 The confusion matrix shows strong classification performance across the majority of plant disease classes.
 
@@ -98,8 +98,8 @@ The system automatically generates a downloadable PDF report after prediction.
 
 Example reports:
 
-- [Sample Report 1](reports/sample_report1.pdf)
-- [Sample Report 2](reports/sample_report2.pdf)
+- [Sample Report 1](reports/Plant_Disease_Report (sample report 1).pdf)
+- [Sample Report 2](reports/Plant_Disease_Report (sample report 2).pdf)
 
 Each report includes:
 
