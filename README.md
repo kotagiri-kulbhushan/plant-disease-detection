@@ -177,7 +177,7 @@ README.md
 Clone the repository
 
 ```
-git clone https://github.com/yourusername/plant-disease-detection.git
+git clone https://github.com/kotagiri-kulbhushan/plant-disease-detection.git
 cd plant-disease-detection
 ```
 
